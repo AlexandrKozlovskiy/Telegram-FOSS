@@ -345,56 +345,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         switchCameraButton.setContentDescription(LocaleController.getString("AccDescrSwitchCamera", R.string.AccDescrSwitchCamera));
         addView(switchCameraButton, LayoutHelper.createFrame(62, 62, Gravity.LEFT | Gravity.BOTTOM, 8, 0, 0, 0));
         switchCameraButton.setOnClickListener(v -> {
-            if (!cameraReady || !isCameraSessionInitiated() || cameraThread == null) {
-                return;
-            }
-            if (!bothCameras) {
-                switchCamera();
-            }
-            if (switchCameraDrawable != null) {
-                switchCameraDrawable.start();
-            }
-            flipAnimationInProgress = true;
-            ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
-            valueAnimator.setDuration(580);
-            valueAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-            final boolean[] didSwap = new boolean[1];
-            Runnable doSwap = () -> {
-                if (bothCameras) {
-                    switchCamera();
-                }
-            };
-            cameraContainer.setCameraDistance(cameraContainer.getMeasuredHeight() * 8f);
-            textureOverlayView.setCameraDistance(textureOverlayView.getMeasuredHeight() * 8f);
-            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                    float p = (float) valueAnimator.getAnimatedValue();
-                    if (p > 0.5f && !didSwap[0]) {
-                        didSwap[0] = true;
-                        doSwap.run();
-                    }
-                    float rotation = p < 0.5f ? p : p - 1f;
-                    rotation *= 180;
-                    cameraContainer.setRotationY(rotation);
-                    textureOverlayView.setRotationY(rotation);
-                }
-            });
-            valueAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    super.onAnimationEnd(animation);
-                    if (!didSwap[0]) {
-                        didSwap[0] = true;
-                        doSwap.run();
-                    }
-                    cameraContainer.setRotationY(0f);
-                    textureOverlayView.setRotationY(0f);
-                    flipAnimationInProgress = false;
-                    invalidate();
-                }
-            });
-            valueAnimator.start();
+switchCameraAndChangeInterface();
         });
 
         muteImageView = new ImageView(context);
@@ -455,6 +406,58 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
+    protected void switchCameraAndChangeInterface() {
+        if (!cameraReady || !isCameraSessionInitiated() || cameraThread == null) {
+            return;
+        }
+        if (!bothCameras) {
+            switchCamera();
+        }
+        if (switchCameraDrawable != null) {
+            switchCameraDrawable.start();
+        }
+        flipAnimationInProgress = true;
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
+        valueAnimator.setDuration(580);
+        valueAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        final boolean[] didSwap = new boolean[1];
+        Runnable doSwap = () -> {
+            if (bothCameras) {
+                switchCamera();
+            }
+        };
+        cameraContainer.setCameraDistance(cameraContainer.getMeasuredHeight() * 8f);
+        textureOverlayView.setCameraDistance(textureOverlayView.getMeasuredHeight() * 8f);
+        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                float p = (float) valueAnimator.getAnimatedValue();
+                if (p > 0.5f && !didSwap[0]) {
+                    didSwap[0] = true;
+                    doSwap.run();
+                }
+                float rotation = p < 0.5f ? p : p - 1f;
+                rotation *= 180;
+                cameraContainer.setRotationY(rotation);
+                textureOverlayView.setRotationY(rotation);
+            }
+        });
+        valueAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                if (!didSwap[0]) {
+                    didSwap[0] = true;
+                    doSwap.run();
+                }
+                cameraContainer.setRotationY(0f);
+                textureOverlayView.setRotationY(0f);
+                flipAnimationInProgress = false;
+                invalidate();
+            }
+        });
+        valueAnimator.start();
+    }
     private boolean checkPointerIds(MotionEvent ev) {
         if (ev.getPointerCount() < 2) {
             return false;

@@ -4819,7 +4819,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     messageString.append(captionMessage.caption);
                 }
             }
-            int len = messageLayout == null ? -1 : messageLayout.getText().length();
+            /*int len = messageLayout == null ? -1 : messageLayout.getText().length();
             if (len > 0) {
                 int index = messageString.length(), b;
                 if ((b = messageString.indexOf("\n", len)) < index && b >= 0)
@@ -4831,8 +4831,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 sb.append(messageString.substring(0, index));
             } else {
                 sb.append(messageString);
-            }
-        }
+            }*/
+            sb.append(messageString);
+                                }
         event.setContentDescription(sb);
         setContentDescription(sb);
     }

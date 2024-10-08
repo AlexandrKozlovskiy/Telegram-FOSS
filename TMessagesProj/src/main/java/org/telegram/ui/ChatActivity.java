@@ -17160,6 +17160,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return true;
                 }
             }
+            if(chatActivityEnterView!=null) return chatActivityEnterView.dispatchKeyEvent(event);
             return super.dispatchKeyEvent(event);
         }
 
