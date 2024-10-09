@@ -68,11 +68,11 @@ android {
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
-    externalNativeBuild {
+    /*externalNativeBuild {
         cmake {
             path 'jni/CMakeLists.txt'
         }
-    }
+    }*/
 
     lintOptions {
         disable 'MissingTranslation'
@@ -105,12 +105,12 @@ android {
 
         multiDexEnabled true
 
-        externalNativeBuild {
+        /*externalNativeBuild {
             cmake {
                 version '3.10.2'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
             }
-        }
+        }*/
     }
 
     buildTypes {
