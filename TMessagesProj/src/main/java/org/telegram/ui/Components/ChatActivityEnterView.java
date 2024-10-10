@@ -947,6 +947,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 //we should have delay too,when we start recording after pause.
                 recordAudioVideoRunnableStarted=false;
                 calledRecordRunnable=true;
+performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK,HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 togglePause();
                 return;
             }
@@ -5856,6 +5857,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
     private Runnable hideKeyboardRunnable;
     public void togglePause() {
+        boolean shouldUpdateInfo=recordingAudioVideo;
         if (audioToSend!=null &&MediaController.getInstance().isPlayingMessage(audioToSendMessageObject)) {
             MediaController.getInstance().cleanupPlayer(true,true);
             /*playPauseDrawable.setIcon(MediaActionDrawable.ICON_PLAY, true);
@@ -5876,6 +5878,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 slideText.setEnabled(false);
             }
         }
+        if(shouldUpdateInfo) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP,HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
     }
 
     public void onPause() {
@@ -6004,31 +6007,29 @@ stateChangeAfterRecordKeyDown=true;
                     stateChangeAfterRecordKeyDown=false;
                     return true;
                 }
-                            if(recordCircle!=null &&!recordCircle.isSendButtonVisible()) {
-                    boolean video = event.getEventTime() - event.getDownTime() >= 400;
-                                if (video != isInVideoMode()) {
-                                    if (sendVoiceEnabled && sendRoundEnabled) {
-                                        delegate.onSwitchRecordMode(video);
-                                        setRecordVideoButtonVisible(video, true);
-                                    } else {
+                            if(recordCircle!=null) {
+                                boolean video = event.getEventTime() - event.getDownTime() >= 400;
+                                if(!recordCircle.isSendButtonVisible()) {
+                                    if (video != isInVideoMode()) {
+                                        if (sendVoiceEnabled && sendRoundEnabled) {
+                                            delegate.onSwitchRecordMode(video);
+                                            setRecordVideoButtonVisible(video, true);
+                                        } else {
+                                            delegate.needShowMediaBanHint();
+                                            return true;
+                                        }
+                                    }
+                                    TLRPC.Chat chat = parentFragment == null ? null : parentFragment.getCurrentChat();
+                                    TLRPC.UserFull userFull = parentFragment == null ? userInfo : parentFragment.getCurrentUserInfo();
+                                    if (chat != null && !(ChatObject.canSendVoice(chat) || (ChatObject.canSendRoundVideo(chat) && hasRecordVideo)) || userFull != null && userFull.voice_messages_forbidden) {
                                         delegate.needShowMediaBanHint();
                                         return true;
                                     }
-                                }
-                                TLRPC.Chat chat = parentFragment == null ? null : parentFragment.getCurrentChat();
-                                TLRPC.UserFull userFull = parentFragment == null ? userInfo : parentFragment.getCurrentUserInfo();
-                                if (chat != null && !(ChatObject.canSendVoice(chat) || (ChatObject.canSendRoundVideo(chat) && hasRecordVideo)) || userFull != null && userFull.voice_messages_forbidden) {
-                                    delegate.needShowMediaBanHint();
-                                    return true;
                                 }
                                 calledRecordRunnable = false;
                                 recordAudioVideoRunnableStarted = true;
                                 AndroidUtilities.runOnUIThread(keyboardRunnable, !video ? 50 : 0);
                                 return true;
-                            }
-                            else if(!isRecordingAudioVideo()) {
-togglePause();
-return true;
                             }
                                             }
             }
