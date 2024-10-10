@@ -673,7 +673,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
     private int currentPopupContentType = -1;
 
-    private boolean silent,silentSend;
+    private boolean silent,silentSend,stateChangeAfterRecordKeyDown;
     private boolean canWriteToChannel;
 
     private boolean smoothKeyboard;
@@ -5035,7 +5035,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
             @Override
             public boolean dispatchKeyEventPreIme(KeyEvent event) {
-                return !isAccessibilityFocused() &&(handleKeyEvent(event) ||true) ||super.dispatchKeyEventPreIme(event);
+                return !isAccessibilityFocused() &&(handleKeyEvent(event) ||event.getKeyCode()!=KeyEvent.KEYCODE_BACK &&event.getKeyCode()!=KeyEvent.KEYCODE_F1) ||super.dispatchKeyEventPreIme(event);
             }
 
         };
@@ -5911,7 +5911,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
         Intent intent = new Intent();
         intent.setAction("com.slepsung.keyboard.IGNORE_DEFAULT_KEY_PRESS");
-        intent.putExtra("key_codes", new int[] {KeyEvent.KEYCODE_4,KeyEvent.KEYCODE_5, KeyEvent.KEYCODE_6, KeyEvent.KEYCODE_7,KeyEvent.KEYCODE_8});
+        intent.putExtra("key_codes", new int[] {KeyEvent.KEYCODE_4,KeyEvent.KEYCODE_5, KeyEvent.KEYCODE_6, KeyEvent.KEYCODE_7,KeyEvent.KEYCODE_8,KeyEvent.KEYCODE_9,KeyEvent.KEYCODE_0});
         getContext().sendBroadcast(intent);
         int visibility = getVisibility();
         if (showKeyboardOnResume && parentFragment != null && parentFragment.isLastFragment()) {
@@ -5931,86 +5931,107 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
     }
     private boolean handleKeyEvent(KeyEvent event) {
-        if(messageEditText.isAccessibilityFocused() ||messageEditText.getText()!=null &&messageEditText.getText().length()>0 &&event.getKeyCode()!=KeyEvent.KEYCODE_8) return false;
-        if(event.getAction()==KeyEvent.ACTION_UP) {
-            if (recordAudioVideoRunnableStarted) return true;
-            createRecordCircle();
-            if(event.getKeyCode() ==KeyEvent.KEYCODE_4) {
-                if(isRecordingAudioVideo() &&slideText!=null) {
-                    slideText.setPressed(true);
-                    slideText.pressed=true;
-                    slideText.onCancelButtonPressed();
-                }
-                else if(audioToSendMessageObject!=null) resetRecordedState();
-            }
-            else if (event.getKeyCode() == KeyEvent.KEYCODE_5) {
-                if (recordCircle!=null &&recordCircle.isSendButtonVisible()) {
-                    togglePause();
-                    return true;
-                } else {
-                    boolean video = event.getEventTime() - event.getDownTime() >= 400;
-                    if (video != isInVideoMode()) {
-                        if (sendVoiceEnabled && sendRoundEnabled) {
-                            delegate.onSwitchRecordMode(video);
-                            setRecordVideoButtonVisible(video, true);
-                        } else {
-                            delegate.needShowMediaBanHint();
+        if(messageEditText.isAccessibilityFocused() ||messageEditText.getText()!=null &&messageEditText.getText().length()>0 &&(event.getKeyCode()!=KeyEvent.KEYCODE_8 ||event.getKeyCode()!=KeyEvent.KEYCODE_9 ||event.getKeyCode()!=KeyEvent.KEYCODE_0)) return false;
+        if (recordAudioVideoRunnableStarted) return true;
+                    createRecordCircle();
+                if(event.getAction()==KeyEvent.ACTION_DOWN &&event.getRepeatCount()==0) {
+                    if (event.getKeyCode() == KeyEvent.KEYCODE_4) {
+                        if (isRecordingAudioVideo() && slideText != null) {
+                            slideText.setPressed(true);
+                            slideText.pressed = true;
+                            slideText.onCancelButtonPressed();
+                        } else resetRecordedState();
+                        return true;
+                    } else if (event.getKeyCode() == KeyEvent.KEYCODE_5) {
+                        //Наша задача сделать так,чтобы при нажатии клавиши запись останавливалась,если она идёт,а при отпускании запись возобновлялась,если она до этого не была завершена нажатием клавиши. Я это делаю для того,чтобы уменьшить звук клавиатуры в конце записи,засчёт того,что звук отпускания клавиши не попадёт на запись.
+                        if (isRecordingAudioVideo()) {
+                                                        togglePause();
+stateChangeAfterRecordKeyDown=true;
                             return true;
                         }
-                    }
-                    TLRPC.Chat chat = parentFragment == null ? null : parentFragment.getCurrentChat();
-                    TLRPC.UserFull userFull = parentFragment == null ? userInfo : parentFragment.getCurrentUserInfo();
-                    if (chat != null && !(ChatObject.canSendVoice(chat) || (ChatObject.canSendRoundVideo(chat) && hasRecordVideo)) || userFull != null && userFull.voice_messages_forbidden) {
-                        delegate.needShowMediaBanHint();
+                    } else if (event.getKeyCode() == KeyEvent.KEYCODE_6) {
+                        //if(recordingAudioVideo) return true;
+                        if (recordingAudioVideo) togglePause();
+                        if (MediaController.getInstance().isPlayingMessage(audioToSendMessageObject) && !MediaController.getInstance().isMessagePaused()) {
+                            MediaController.getInstance().pauseMessage(audioToSendMessageObject);
+                            playPauseDrawable.setIcon(MediaActionDrawable.ICON_PLAY, true);
+                            recordedAudioPlayButton.setContentDescription(LocaleController.getString("AccActionPlay", R.string.AccActionPlay));
+                        } else {
+                            playPauseDrawable.setIcon(MediaActionDrawable.ICON_PAUSE, true);
+                            MediaController.getInstance().playMessage(audioToSendMessageObject);
+                            recordedAudioPlayButton.setContentDescription(LocaleController.getString("AccActionPause", R.string.AccActionPause));
+                        }
+                        return true;
+                    } else if (event.getKeyCode() == KeyEvent.KEYCODE_7) {
+                        if (parentFragment != null && parentFragment.instantCameraView != null) {
+                            parentFragment.instantCameraView.switchCameraAndChangeInterface();
+                            return true;
+                        }
+                    } else if (event.getKeyCode() == KeyEvent.KEYCODE_8 || event.getKeyCode() == KeyEvent.KEYCODE_9) {
+                        silentSend = event.getKeyCode() == KeyEvent.KEYCODE_9;
+                        if (!isRecordingAudioVideo()) sendMessage();
+                        else {
+                            if (!hasRecordVideo || calledRecordRunnable) {
+                                startedDraggingX = -1;
+                                if (hasRecordVideo && isInVideoMode()) {
+                                    delegate.needStartRecordVideo(1, !silentSend, 0, voiceOnce ? 0x7FFFFFFF : 0, effectId);
+                                } else {
+                                    if (isInScheduleMode()) {
+                                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (notify, scheduleDate) -> MediaController.getInstance().stopRecording(1, notify, scheduleDate, false), () -> MediaController.getInstance().stopRecording(0, false, 0, false), resourcesProvider);
+                                    }
+                                    MediaController.getInstance().stopRecording(isInScheduleMode() ? 3 : 1, !silentSend, 0, voiceOnce);
+                                    delegate.needStartRecordAudio(0);
+                                }
+                                recordingAudioVideo = false;
+                                messageTransitionIsRunning = false;
+                                silentSend = false;
+                                AndroidUtilities.runOnUIThread(moveToSendStateRunnable = () -> {
+                                    moveToSendStateRunnable = null;
+                                    updateRecordInterface(RECORD_STATE_SENDING, true);
+                                }/*, 200*/);
+                            }
+                        }
                         return true;
                     }
-                    calledRecordRunnable = false;
-                    recordAudioVideoRunnableStarted = true;
-                    AndroidUtilities.runOnUIThread(keyboardRunnable, !video ? 50 : 0);
-                    return true;
-                }
-            }
-            else if(event.getKeyCode()==KeyEvent.KEYCODE_6) {
-                if(recordingAudioVideo) return true;
-                if (MediaController.getInstance().isPlayingMessage(audioToSendMessageObject) && !MediaController.getInstance().isMessagePaused()) {
-                    MediaController.getInstance().pauseMessage(audioToSendMessageObject);
-                    playPauseDrawable.setIcon(MediaActionDrawable.ICON_PLAY, true);
-                    recordedAudioPlayButton.setContentDescription(LocaleController.getString("AccActionPlay", R.string.AccActionPlay));
-                } else {
-                    playPauseDrawable.setIcon(MediaActionDrawable.ICON_PAUSE, true);
-                    MediaController.getInstance().playMessage(audioToSendMessageObject);
-                    recordedAudioPlayButton.setContentDescription(LocaleController.getString("AccActionPause", R.string.AccActionPause));
-                }
-                return true;
-            }
-            else if(event.getKeyCode()==KeyEvent.KEYCODE_7) {
-                if(parentFragment!=null &&parentFragment.instantCameraView!=null) parentFragment.instantCameraView.switchCameraAndChangeInterface();
-            }
-            else if(event.getKeyCode()==KeyEvent.KEYCODE_8) {
-                silentSend=event.getEventTime() - event.getDownTime() >= 400;
-                if(!isRecordingAudioVideo()) sendMessage(); else {
-                    if (!hasRecordVideo || calledRecordRunnable) {
-                        startedDraggingX = -1;
-                        if (hasRecordVideo && isInVideoMode()) {
-                            delegate.needStartRecordVideo(1, !silentSend, 0, voiceOnce ? 0x7FFFFFFF : 0,effectId);
-                        } else {
-                            if (isInScheduleMode()) {
-                                AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (notify, scheduleDate) -> MediaController.getInstance().stopRecording(1, notify, scheduleDate, false), () -> MediaController.getInstance().stopRecording(0, false, 0, false), resourcesProvider);
-                            }
-                            MediaController.getInstance().stopRecording(isInScheduleMode() ? 3 : 1, !silentSend, 0, voiceOnce);
-                            delegate.needStartRecordAudio(0);
-                        }
-                        messageTransitionIsRunning = false;
-                        silentSend=false;
-                        AndroidUtilities.runOnUIThread(moveToSendStateRunnable = () -> {
-                            moveToSendStateRunnable = null;
-                            updateRecordInterface(RECORD_STATE_SENDING, true);
-                        }/*, 200*/);
+                    else if(event.getKeyCode()==KeyEvent.KEYCODE_0) {
+                        delegate.didPressAttachButton();
+                        return true;
                     }
                 }
-                return true;
+            else if (event.getAction() ==KeyEvent.ACTION_UP) {
+            if(event.getKeyCode()==KeyEvent.KEYCODE_5) {
+                if(stateChangeAfterRecordKeyDown) { //Нажатие клавиши остановило запись,а значит не нужно ничего делать.
+                    stateChangeAfterRecordKeyDown=false;
+                    return true;
+                }
+                            if(recordCircle!=null &&!recordCircle.isSendButtonVisible()) {
+                    boolean video = event.getEventTime() - event.getDownTime() >= 400;
+                                if (video != isInVideoMode()) {
+                                    if (sendVoiceEnabled && sendRoundEnabled) {
+                                        delegate.onSwitchRecordMode(video);
+                                        setRecordVideoButtonVisible(video, true);
+                                    } else {
+                                        delegate.needShowMediaBanHint();
+                                        return true;
+                                    }
+                                }
+                                TLRPC.Chat chat = parentFragment == null ? null : parentFragment.getCurrentChat();
+                                TLRPC.UserFull userFull = parentFragment == null ? userInfo : parentFragment.getCurrentUserInfo();
+                                if (chat != null && !(ChatObject.canSendVoice(chat) || (ChatObject.canSendRoundVideo(chat) && hasRecordVideo)) || userFull != null && userFull.voice_messages_forbidden) {
+                                    delegate.needShowMediaBanHint();
+                                    return true;
+                                }
+                                calledRecordRunnable = false;
+                                recordAudioVideoRunnableStarted = true;
+                                AndroidUtilities.runOnUIThread(keyboardRunnable, !video ? 50 : 0);
+                                return true;
+                            }
+                            else if(!isRecordingAudioVideo()) {
+togglePause();
+return true;
+                            }
+                                            }
             }
-        }
         return false;
     }
 
