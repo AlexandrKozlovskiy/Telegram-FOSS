@@ -49,6 +49,7 @@ import android.widget.TextView;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.Keep;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -211,7 +212,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private boolean checkImportAfterAnimation;
 
     private final static float[] speeds = new float[] {
-        .5f, 1f, 1.2f, 1.5f, 1.7f, 2f
+            .5f, 1f, 1.2f, 1.5f, 1.7f, 2f
     };
 
     @Override
@@ -391,6 +392,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 }
                 return textView;
             }
+
         };
         addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 35, 0, 36, 0));
 
@@ -448,10 +450,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             private void updateJoinButtonWidth(int width) {
                 if (joinButtonWidth != width) {
                     titleTextView.setPadding(
-                        titleTextView.getPaddingLeft(),
-                        titleTextView.getPaddingTop(),
-                        titleTextView.getPaddingRight() - joinButtonWidth + width,
-                        titleTextView.getPaddingBottom()
+                            titleTextView.getPaddingLeft(),
+                            titleTextView.getPaddingTop(),
+                            titleTextView.getPaddingRight() - joinButtonWidth + width,
+                            titleTextView.getPaddingBottom()
                     );
                     joinButtonWidth = width;
                 }
@@ -875,6 +877,17 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         }
     }
 
+    private OnClickListener listener;
+
+    @Override
+    public void setOnClickListener(@Nullable OnClickListener listener) {
+        super.setOnClickListener(listener);
+        this.listener =listener;
+    }
+
+    public OnClickListener getOnClickListener() {
+        return listener;
+    }
     public void onPanTranslationUpdate(float y) {
         if (speedHintView != null) {
             speedHintView.setExtraTranslationY(AndroidUtilities.dp(64 + 8) + y);

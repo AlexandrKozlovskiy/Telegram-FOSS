@@ -683,6 +683,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             super(context);
             needBlur = true;
             blurBehindViews.add(this);
+                        setFocusable(true);
+                        requestFocus();
+        }
+
+        @Override
+        public CharSequence getAccessibilityClassName() {
+            return "Смузи из клубники";
         }
 
         private int startedTrackingPointerId;
@@ -1543,7 +1550,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 maybeStartTracking = false;
                                 actionBar.setEnabled(true);
                                 filterTabsView.setEnabled(true);
-                                checkListLoad(viewPages[0]);
+                                    checkListLoad(viewPages[0]);
                             }
                         });
                         tabsAnimation.start();
@@ -1564,6 +1571,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 return startedTracking;
             }
             return false;
+        }
+
+        @Override
+        public boolean dispatchKeyEvent(KeyEvent event) {
+                        if(event.getAction()==KeyEvent.ACTION_DOWN &&event.getRepeatCount()==0) {
+                if(event.getKeyCode() ==KeyEvent.KEYCODE_CALL &&fragmentContextView!=null &&fragmentContextView.getOnClickListener()!=null) fragmentContextView.getOnClickListener().onClick(fragmentContextView);
+            }
+                return super.dispatchKeyEvent(event);
         }
 
         @Override
@@ -2183,7 +2198,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 if (DialogObject.isFolderDialogId(dialogId)) {
                                     toggleArchiveHidden(false, dialogCell);
                                 } else {
-                                    TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialogId);
+                                 TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialogId);
                                     if (dialog != null) {
                                         if (SharedConfig.getChatSwipeAction(currentAccount) == SwipeGestureSettingsView.SWIPE_GESTURE_READ) {
                                             ArrayList<Long> selectedDialogs = new ArrayList<>();
