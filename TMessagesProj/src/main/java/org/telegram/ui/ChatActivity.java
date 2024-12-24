@@ -1445,7 +1445,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int share_business_link = 66;
     private final static int rename_business_link = 67;
     private final static int delete_business_link = 68;
-    
+
     private final static int share = 69;
 
     private final static int id_chat_compose_panel = 1000;
@@ -9749,7 +9749,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 scrimViewAlphaAnimator.cancel();
             }
             animators.add(scrimPaintAlphaAnimator = ValueAnimator.ofFloat(0, value));
-            
+
             if (blur) {
                 AndroidUtilities.makeGlobalBlurBitmap(bitmap -> {
                     scrimBlurBitmap = bitmap;
@@ -12262,11 +12262,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             return;
         }
 
-        try {
+        /*try {
             fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         } catch (Exception e) {
             FileLog.e(e);
-        }
+        }*/
 
         if (mediaBanTooltip == null) {
             mediaBanTooltip = new HintView(getParentActivity(), 9, themeDelegate);
@@ -12309,6 +12309,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             viewForTooltip = audioVideoBtn;
         }
         mediaBanTooltip.showForView(viewForTooltip, true);
+        mediaBanTooltip.announceForAccessibility(mediaBanTooltip.getTooltipText());
     }
 
     private void showNoSoundHint() {
@@ -17155,8 +17156,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return true;
                 } else if (event.getAction() == KeyEvent.ACTION_UP && getParentActivity() != null) {
                     TLRPC.UserFull userFull = getMessagesController().getUserFull(currentUser.id);
-                    if (userFull != null && userFull.phone_calls_available && VoIPService.getSharedInstance() == null)
-                        VoIPHelper.startCall(currentUser, event.getRepeatCount() > 0, userInfo != null && userInfo.video_calls_available, getParentActivity(), getMessagesController().getUserFull(currentUser.id), getAccountInstance());
+                    if (userFull != null && userFull.phone_calls_available )
+                        VoIPHelper.startCall(currentUser, event.getRepeatCount() > 0, userInfo != null && userInfo.video_calls_available, getParentActivity(), userFull, getAccountInstance());
                     return true;
                 }
             }
