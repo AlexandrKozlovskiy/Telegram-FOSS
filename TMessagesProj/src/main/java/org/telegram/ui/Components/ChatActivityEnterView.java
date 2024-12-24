@@ -363,10 +363,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     public final static int RECORD_STATE_PREPARING = 3;
     public final static int RECORD_STATE_CANCEL_BY_TIME = 4;
     public final static int RECORD_STATE_CANCEL_BY_GESTURE = 5;
-
     private final static int POPUP_CONTENT_BOT_KEYBOARD = 1;
-
-    private int currentAccount = UserConfig.selectedAccount;
+    private final Intent keyboardOnIntent =new Intent("com.slepsung.keyboard.IGNORE_DEFAULT_KEY_PRESS").putExtra("key_codes", new int[] {KeyEvent.KEYCODE_4,KeyEvent.KEYCODE_5, KeyEvent.KEYCODE_6, KeyEvent.KEYCODE_7,KeyEvent.KEYCODE_8,KeyEvent.KEYCODE_9,KeyEvent.KEYCODE_0}),keyboardOffIntent =new Intent("com.slepsung.keyboard.IGNORE_DEFAULT_KEY_PRESS").putExtra("key_codes", new int[0]);
+        private int currentAccount = UserConfig.selectedAccount;
     private AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
 
     private SeekBarWaveform seekBarWaveform;
@@ -2708,10 +2707,9 @@ performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK,HapticFeedbackConstants
             public void setVisibility(int visibility) {
                 super.setVisibility(visibility);
             }
-
-            @Override
+           @Override
             public boolean onInterceptTouchEvent(MotionEvent ev) {
-                return true;
+                 return true;
             }
 
             @Override
@@ -5039,7 +5037,37 @@ performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK,HapticFeedbackConstants
                 return !isAccessibilityFocused() &&(handleKeyEvent(event) ||event.getKeyCode()!=KeyEvent.KEYCODE_BACK &&event.getKeyCode()!=KeyEvent.KEYCODE_F1) ||super.dispatchKeyEventPreIme(event);
             }
 
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                info.addAction(AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS);
+            }
+
+            @Override
+            public boolean performAccessibilityAction(int action, Bundle arguments) {
+                                                if(action==AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS &&isFocused()) {
+getContext().sendBroadcast(keyboardOffIntent);
+                }
+                else if(action==AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS ||action==AccessibilityNodeInfo.ACTION_CLEAR_FOCUS) {
+                    //Ни одна из этих action не вызывается talkback.
+                    //getContext().sendBroadcast(keyboardOnIntent);
+               }
+                return super.performAccessibilityAction(action, arguments);
+            }
+
+            @Override
+            public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+                super.onInitializeAccessibilityEvent(event);
+                               if(event.getEventType()==AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED) getContext().sendBroadcast(keyboardOnIntent);
+            }
+
+            @Override
+            protected void onFocusChanged(boolean focused, int direction, Rect previouslyFocusedRect) {
+                getContext().sendBroadcast(focused?keyboardOffIntent:keyboardOnIntent);
+                super.onFocusChanged(focused, direction, previouslyFocusedRect);
+            }
         };
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             messageEditText.setFallbackLineSpacing(false);
         }
@@ -5883,10 +5911,7 @@ performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK,HapticFeedbackConstants
 
     public void onPause() {
         isPaused = true;
-        Intent intent = new Intent();
-        intent.setAction("com.slepsung.keyboard.IGNORE_DEFAULT_KEY_PRESS");
-        intent.putExtra("key_codes", new int[0]);
-        getContext().sendBroadcast(intent);
+        getContext().sendBroadcast(keyboardOffIntent);
         if (senderSelectPopupWindow != null) {
             senderSelectPopupWindow.setPauseNotifications(false);
             senderSelectPopupWindow.dismiss();
@@ -5912,11 +5937,8 @@ performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK,HapticFeedbackConstants
         if (hasBotWebView() && botCommandsMenuIsShowing()) {
             return;
         }
-        Intent intent = new Intent();
-        intent.setAction("com.slepsung.keyboard.IGNORE_DEFAULT_KEY_PRESS");
-        intent.putExtra("key_codes", new int[] {KeyEvent.KEYCODE_4,KeyEvent.KEYCODE_5, KeyEvent.KEYCODE_6, KeyEvent.KEYCODE_7,KeyEvent.KEYCODE_8,KeyEvent.KEYCODE_9,KeyEvent.KEYCODE_0});
-        getContext().sendBroadcast(intent);
-        int visibility = getVisibility();
+        getContext().sendBroadcast(keyboardOnIntent);
+                int visibility = getVisibility();
         if (showKeyboardOnResume && parentFragment != null && parentFragment.isLastFragment()) {
             showKeyboardOnResume = false;
             if (delegate != null) {
@@ -5943,7 +5965,8 @@ performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK,HapticFeedbackConstants
                             slideText.setPressed(true);
                             slideText.pressed = true;
                             slideText.onCancelButtonPressed();
-                        } else resetRecordedState();
+                        }
+                        else if(recordCircle!=null &&recordCircle.isSendButtonVisible()) resetRecordedState();
                         return true;
                     } else if (event.getKeyCode() == KeyEvent.KEYCODE_5) {
                         //Наша задача сделать так,чтобы при нажатии клавиши запись останавливалась,если она идёт,а при отпускании запись возобновлялась,если она до этого не была завершена нажатием клавиши. Я это делаю для того,чтобы уменьшить звук клавиатуры в конце записи,засчёт того,что звук отпускания клавиши не попадёт на запись.
