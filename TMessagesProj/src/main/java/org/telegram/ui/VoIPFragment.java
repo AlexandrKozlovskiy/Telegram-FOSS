@@ -317,7 +317,7 @@ public class VoIPFragment implements VoIPService.StateListener, NotificationCent
                     return true;
                 }
                 //if(event.getAction() ==KeyEvent.ACTION_DOWN &&keyCode ==KeyEvent.KEYCODE_CALL) event.startTracking();
-                if(event.getAction() ==KeyEvent.ACTION_DOWN &&event.getRepeatCount()==0 &&(keyCode ==KeyEvent.KEYCODE_CALL ||keyCode ==KeyEvent.KEYCODE_F1 ||keyCode ==KeyEvent.KEYCODE_MENU)) {
+                if(event.getAction() ==KeyEvent.ACTION_DOWN &&event.getRepeatCount()==0 &&(keyCode ==KeyEvent.KEYCODE_CALL ||keyCode ==KeyEvent.KEYCODE_MENU ||keyCode==KeyEvent.KEYCODE_STAR ||keyCode==KeyEvent.KEYCODE_POUND)) {
                     VoIPService s=VoIPService.getSharedInstance();
                     if(keyCode ==KeyEvent.KEYCODE_CALL) {
                         if(!fragment.acceptIncomingCallOrCall() &&s!=null) {
@@ -329,13 +329,10 @@ if(ac.isTouchExplorationEnabled())announceForAccessibility(s.isMicMute() ? Local
 ac=null;
                         }
                     }
-                    else if(keyCode ==KeyEvent.KEYCODE_F1) {
-                        if (s==null ||s.getCallState() == VoIPService.STATE_BUSY) fragment.windowView.finish();
-                        else if (s.getCallState() == VoIPService.STATE_WAITING_INCOMING) s.hangUp(); else if (s.getCallState() != VoIPService.STATE_BUSY) s.declineIncomingCall();
-                    }
                     else if(keyCode==KeyEvent.KEYCODE_MENU) {
                         if(s!=null) s.toggleSpeakerphoneOrShowRouteSheet(getContext(), false);
                     }
+                    else if((keyCode==KeyEvent.KEYCODE_STAR ||keyCode==KeyEvent.KEYCODE_POUND) &&s!=null) s.adjustVolume(keyCode==KeyEvent.KEYCODE_POUND);
                     return true;
                 }
                 if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
@@ -346,6 +343,13 @@ ac=null;
                             return true;
                         }
                     }
+                }
+                else if(event.getAction()==KeyEvent.ACTION_UP &&keyCode ==KeyEvent.KEYCODE_F1) {
+                    VoIPService s=VoIPService.getSharedInstance();
+                    if (s==null ||s.getCallState() == VoIPService.STATE_BUSY) fragment.windowView.finish();
+                    else if (s.getCallState() == VoIPService.STATE_WAITING_INCOMING) s.hangUp();
+                    else if (s.getCallState() != VoIPService.STATE_BUSY) s.declineIncomingCall();
+                    return true;
                 }
                 return super.dispatchKeyEvent(event);
             }
@@ -2687,7 +2691,7 @@ acceptIncomingCallOrCall();
                 speakerPhoneIcon.setImageResource(R.drawable.calls_menu_phone);
             }
         }
-    }
+   }
 
     private void setSpeakerPhoneAction(VoIpSwitchLayout bottomButton, VoIPService service, boolean animated) {
         final int selectedSpeaker;

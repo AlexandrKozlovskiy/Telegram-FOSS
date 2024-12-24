@@ -4690,4 +4690,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		public boolean cameraAlertWasShowed;
 		public boolean wasVideoCall;
 	}
+public void adjustVolume(boolean up) {
+	AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+if(am!=null) am.adjustVolume(up?AudioManager.ADJUST_RAISE:AudioManager.ADJUST_LOWER,0);
+}
 }
