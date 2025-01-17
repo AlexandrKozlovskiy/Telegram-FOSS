@@ -449,7 +449,7 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
                 createListView();
 //                containerView.setVisibility(View.VISIBLE);
                 arrowToSpan = null;
-                searchKeywords(text.toString().substring(0, selectionEnd));
+                if(selectionEnd>=0) searchKeywords(text.toString().substring(0, selectionEnd));
                 if (containerView != null) {
                     containerView.invalidate();
                 }
