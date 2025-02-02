@@ -332,7 +332,7 @@ ac=null;
                     else if(keyCode==KeyEvent.KEYCODE_MENU) {
                         if(s!=null) s.toggleSpeakerphoneOrShowRouteSheet(getContext(), false);
                     }
-                    else if((keyCode==KeyEvent.KEYCODE_STAR ||keyCode==KeyEvent.KEYCODE_POUND) &&s!=null) s.adjustVolume(keyCode==KeyEvent.KEYCODE_POUND);
+                    else if((keyCode==KeyEvent.KEYCODE_STAR ||keyCode==KeyEvent.KEYCODE_POUND) &&s!=null) VoIPService.adjustVolume(getContext(),keyCode==KeyEvent.KEYCODE_POUND);
                     return true;
                 }
                 if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
