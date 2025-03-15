@@ -5034,7 +5034,13 @@ performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK,HapticFeedbackConstants
 
             @Override
             public boolean dispatchKeyEventPreIme(KeyEvent event) {
-                return !isAccessibilityFocused() &&(handleKeyEvent(event) ||event.getKeyCode()!=KeyEvent.KEYCODE_BACK &&event.getKeyCode()!=KeyEvent.KEYCODE_F1) ||super.dispatchKeyEventPreIme(event);
+               return !isAccessibilityFocused() &&(handleKeyEvent(event) /*||event.getKeyCode()!=KeyEvent.KEYCODE_BACK &&event.getKeyCode()!=KeyEvent.KEYCODE_F1*/) ||super.dispatchKeyEventPreIme(event);
+            }
+
+            @Override
+            public void setSelection(int start, int stop) {
+                super.setSelection(start, stop);
+                announceForAccessibility(start+" "+stop);
             }
 
             @Override
@@ -5956,6 +5962,10 @@ getContext().sendBroadcast(keyboardOffIntent);
         }
     }
     private boolean handleKeyEvent(KeyEvent event) {
+        if(event.getKeyCode()==KeyEvent.KEYCODE_BACK) {
+            getParentFragment().finishFragment();
+            return true;
+        }
         if(messageEditText.isAccessibilityFocused() ||messageEditText.getText()!=null &&messageEditText.getText().length()>0 &&(event.getKeyCode()!=KeyEvent.KEYCODE_8 ||event.getKeyCode()!=KeyEvent.KEYCODE_9 ||event.getKeyCode()!=KeyEvent.KEYCODE_0)) return false;
         if (recordAudioVideoRunnableStarted) return true;
                     createRecordCircle();

@@ -179,6 +179,7 @@ import org.telegram.messenger.WebFile;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.camera.Size;
 import org.telegram.messenger.video.VideoPlayerRewinder;
+import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -4348,13 +4349,36 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 return isVisible && PhotoViewer.this.onTouchEvent(event);
             }
 
+
+            private void rewindVideoOrWeb(int delta) {
+                if (videoPlayer != null || photoViewerWebView != null && photoViewerWebView.isControllable()) {
+                    long duration = getVideoDuration();
+                    long position=getCurrentVideoPosition();
+                    if (duration == C.TIME_UNSET ||duration==0 ||position <0 ||delta==0 ||position==0 &&delta<0 ||position==duration &&delta>0) return;
+                    if(delta<0) position=position<delta?0:position+delta;
+                    else position=position+delta>duration?duration:position+delta;
+                    seekVideoOrWebTo(position);
+                    showVideoSeekPreviewPosition(false);
+                    needShowOnReady = false;
+                    videoPlayerSeekbar.setProgress(position/(float) duration);
+                    videoPlayerSeekbarView.invalidate();
+                }
+            }
             @Override
             public boolean dispatchKeyEvent(KeyEvent event) {
                 int keyCode = event.getKeyCode();
                 if (!muteVideo && sendPhotoType != SELECT_TYPE_AVATAR && isCurrentVideo && videoPlayer != null && event.getRepeatCount() == 0 && event.getAction() == KeyEvent.ACTION_DOWN && (event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN)) {
                     videoPlayer.setVolume(1.0f);
                 }
-                return super.dispatchKeyEvent(event);
+                else if((keyCode==KeyEvent.KEYCODE_5 ||keyCode==KeyEvent.KEYCODE_STAR ||keyCode==KeyEvent.KEYCODE_POUND ||keyCode==KeyEvent.KEYCODE_DPAD_LEFT ||keyCode==KeyEvent.KEYCODE_DPAD_RIGHT) &&event.getAction()==KeyEvent.ACTION_DOWN &&sendPhotoType != SELECT_TYPE_AVATAR) {
+                   if(keyCode==KeyEvent.KEYCODE_5 &&event.getRepeatCount()==0) {
+                        if((videoPlayer != null ? videoPlayer.isPlaying() &&videoPlayer.getPlaybackState() !=ExoPlayer.STATE_ENDED: photoViewerWebView.isPlaying())) pauseVideoOrWeb(); else playVideoOrWeb();
+                    }
+                        else if((keyCode==KeyEvent.KEYCODE_STAR ||keyCode==KeyEvent.KEYCODE_POUND)) VoIPService.adjustVolume(getContext(),keyCode==KeyEvent.KEYCODE_POUND);
+                                                else if(keyCode==KeyEvent.KEYCODE_DPAD_LEFT ||keyCode==KeyEvent.KEYCODE_DPAD_RIGHT) rewindVideoOrWeb(keyCode==KeyEvent.KEYCODE_DPAD_LEFT?-1000:1000);
+                                                    return true;
+                }
+            return super.dispatchKeyEvent(event);
             }
 
             @Override
@@ -8415,8 +8439,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 showVideoSeekPreviewPosition(true);
                 updateVideoSeekPreviewPosition();
             }
-        };
-
+         };
         final FloatSeekBarAccessibilityDelegate accessibilityDelegate = new FloatSeekBarAccessibilityDelegate() {
             @Override
             public float getProgress() {
@@ -15998,15 +16021,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             });
 
         }
-
-        AccessibilityManager am = (AccessibilityManager) parentActivity.getSystemService(Context.ACCESSIBILITY_SERVICE);
-        if (am.isTouchExplorationEnabled()) {
-            AccessibilityEvent event = AccessibilityEvent.obtain();
-            event.setEventType(AccessibilityEvent.TYPE_ANNOUNCEMENT);
-            event.getText().add(LocaleController.getString("AccDescrPhotoViewer", R.string.AccDescrPhotoViewer));
-            am.sendAccessibilityEvent(event);
-        }
-
+if(videoPlayer==null &&photoViewerWebView==null &&sendPhotoType !=SELECT_TYPE_AVATAR) {
+    AccessibilityManager am = (AccessibilityManager) parentActivity.getSystemService(Context.ACCESSIBILITY_SERVICE);
+    if (am.isTouchExplorationEnabled()) {
+        AccessibilityEvent event = AccessibilityEvent.obtain();
+        event.setEventType(AccessibilityEvent.TYPE_ANNOUNCEMENT);
+        event.getText().add(LocaleController.getString("AccDescrPhotoViewer", R.string.AccDescrPhotoViewer));
+        am.sendAccessibilityEvent(event);
+    }
+}
         return true;
     }
 
